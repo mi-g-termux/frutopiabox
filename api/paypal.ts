@@ -1,8 +1,8 @@
 /** /api/paypal?action=create-order|capture-order|callback */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import createOrder from './_paypal/create-order';
-import captureOrder from './_paypal/capture-order';
-import callback from './_paypal/callback';
+import createOrder from './paypal/create-order';
+import captureOrder from './paypal/capture-order';
+import callback from './paypal/callback';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = String((req.query.action as string) || '').toLowerCase();

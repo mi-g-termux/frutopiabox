@@ -1,7 +1,7 @@
 /** /api/sslcommerz?action=create-payment|ipn */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import createPayment from './_sslcommerz/create-payment';
-import ipn from './_sslcommerz/ipn';
+import createPayment from './sslcommerz/create-payment';
+import ipn from './sslcommerz/ipn';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = String((req.query.action as string) || '').toLowerCase();

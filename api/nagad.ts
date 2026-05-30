@@ -1,7 +1,7 @@
 /** /api/nagad?action=create-payment|verify-payment */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import createPayment from './_nagad/create-payment';
-import verifyPayment from './_nagad/verify-payment';
+import createPayment from './nagad/create-payment';
+import verifyPayment from './nagad/verify-payment';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = String((req.query.action as string) || '').toLowerCase();

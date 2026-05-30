@@ -10,8 +10,8 @@
  * existing client URLs keep working unchanged.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import createPayment from './_bkash/create-payment';
-import executePayment from './_bkash/execute-payment';
+import createPayment from './bkash/create-payment';
+import executePayment from './bkash/execute-payment';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = String((req.query.action as string) || '').toLowerCase();
