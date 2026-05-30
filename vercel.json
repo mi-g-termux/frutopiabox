@@ -3,13 +3,16 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/firebase-config.json", "destination": "/api/firebase-config" },
-    { "source": "/api/bkash/:action",      "destination": "/api/bkash?action=:action" },
-    { "source": "/api/nagad/:action",      "destination": "/api/nagad?action=:action" },
-    { "source": "/api/paypal/:action",     "destination": "/api/paypal?action=:action" },
-    { "source": "/api/razorpay/:action",   "destination": "/api/razorpay?action=:action" },
-    { "source": "/api/sslcommerz/:action", "destination": "/api/sslcommerz?action=:action" },
-    { "source": "/api/stripe/:action",     "destination": "/api/stripe?action=:action" },
+
+    { "source": "/api/bkash/:action",      "destination": "/api/payment?gateway=bkash&action=:action" },
+    { "source": "/api/nagad/:action",      "destination": "/api/payment?gateway=nagad&action=:action" },
+    { "source": "/api/sslcommerz/:action", "destination": "/api/payment?gateway=sslcommerz&action=:action" },
+    { "source": "/api/razorpay/:action",   "destination": "/api/payment?gateway=razorpay&action=:action" },
+    { "source": "/api/paypal/:action",     "destination": "/api/payment?gateway=paypal&action=:action" },
+    { "source": "/api/stripe/:action",     "destination": "/api/payment?gateway=stripe&action=:action" },
+
     { "source": "/api/(.*)", "destination": "/api/$1" },
+
     { "source": "/((?!api/|.*\\..+$).*)", "destination": "/index.html" }
   ],
   "headers": [
@@ -23,8 +26,7 @@
       "source": "/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        { "key": "X-Frame-Options",        "value": "DENY" }
       ]
     }
   ]
