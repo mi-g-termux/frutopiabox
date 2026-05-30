@@ -1,61 +1,53 @@
 // api/payment.ts
 // ─────────────────────────────────────────────────────────────────────────────
-// SINGLE Vercel Serverless Function that routes ALL payment-gateway traffic.
-//
-// Why this exists:
-//   Vercel Hobby plan caps deployments at 12 Serverless Functions.
-//   Bundling every gateway action here consumes exactly ONE slot instead of ~11.
-//
-// How it works:
-//   1. vercel.json rewrites  /api/<gateway>/<action>
-//      →  /api/payment?gateway=<gateway>&action=<action>
-//   2. This file reads those two query params and delegates to the original
-//      handler modules (your gateway folders are UNTOUCHED).
-//   3. The frontend never changes — it keeps calling /api/bkash/create-payment,
-//      /api/sslcommerz/ipn, etc.
-//
-// Supported routes (auto-discovered from query params):
-//   gateway=bkash      action=create-payment | execute-payment
-//   gateway=nagad      action=create-payment | verify-payment
-//   gateway=sslcommerz action=create-payment | ipn
-//   gateway=razorpay   action=create-order   | verify-payment
-//   gateway=paypal     action=create-order   | capture-order | callback
-//   gateway=stripe     action=create-payment-intent | confirm-payment
+// SINGLE Vercel Serverless Function: routes ALL payment-gateway traffic.
+// Fixes: Vercel-safe static imports, comprehensive error logging, edge-case handling.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// ── Lazy-import map ──────────────────────────────────────────────────────────
-// Each value is a () => Promise<handler> so that cold-start only loads the
-// modules actually needed for this invocation.
-type Handler = (req: VercelRequest, res: VercelResponse) => unknown;
-type HandlerLoader = () => Promise<{ default: Handler }>;
+// ── Static imports (no dynamic import() — more reliable on Vercel) ──────────
+import bkashCreate from './bkash/create-payment';
+import bkashExecute from './bkash/execute-payment';
+import nagadCreate from './nagad/create-payment';
+import nagadVerify from './nagad/verify-payment';
+import sslcommerzCreate from './sslcommerz/create-payment';
+import sslcommerzIpn from './sslcommerz/ipn';
+import razorpayCreate from './razorpay/create-order';
+import razorpayVerify from './razorpay/verify-payment';
+import paypalCreate from './paypal/create-order';
+import paypalCapture from './paypal/capture-order';
+import paypalCallback from './paypal/callback';
+import stripeCreate from './stripe/create-payment-intent';
+import stripeConfirm from './stripe/confirm-payment';
 
-const ROUTE_MAP: Record<string, Record<string, HandlerLoader>> = {
+// ── Route map: no lazy loading, direct function references ──────────────────
+type Handler = (req: VercelRequest, res: VercelResponse) => unknown;
+const ROUTE_MAP: Record<string, Record<string, Handler>> = {
   bkash: {
-    'create-payment':  () => import('./bkash/create-payment'),
-    'execute-payment': () => import('./bkash/execute-payment'),
+    'create-payment':  bkashCreate,
+    'execute-payment': bkashExecute,
   },
   nagad: {
-    'create-payment': () => import('./nagad/create-payment'),
-    'verify-payment': () => import('./nagad/verify-payment'),
+    'create-payment': nagadCreate,
+    'verify-payment': nagadVerify,
   },
   sslcommerz: {
-    'create-payment': () => import('./sslcommerz/create-payment'),
-    'ipn':            () => import('./sslcommerz/ipn'),
+    'create-payment': sslcommerzCreate,
+    'ipn':            sslcommerzIpn,
   },
   razorpay: {
-    'create-order':   () => import('./razorpay/create-order'),
-    'verify-payment': () => import('./razorpay/verify-payment'),
+    'create-order':   razorpayCreate,
+    'verify-payment': razorpayVerify,
   },
   paypal: {
-    'create-order':   () => import('./paypal/create-order'),
-    'capture-order':  () => import('./paypal/capture-order'),
-    'callback':       () => import('./paypal/callback'),
+    'create-order':   paypalCreate,
+    'capture-order':  paypalCapture,
+    'callback':       paypalCallback,
   },
   stripe: {
-    'create-payment-intent': () => import('./stripe/create-payment-intent'),
-    'confirm-payment':       () => import('./stripe/confirm-payment'),
+    'create-payment-intent': stripeCreate,
+    'confirm-payment':       stripeConfirm,
   },
 };
 
@@ -64,54 +56,81 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
 ): Promise<void> {
-  // CORS pre-flight — propagated to all downstream handlers automatically
-  // because we call them with the same req/res objects.
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-    res.status(204).end();
-    return;
-  }
+  const requestId = Math.random().toString(36).slice(2, 8);
+  const startTime = Date.now();
 
-  const gateway = normalise(req.query.gateway);
-  const action  = normalise(req.query.action);
-
-  // ── Validation ─────────────────────────────────────────────────────────────
-  if (!gateway || !action) {
-    res.status(400).json({
-      error: 'Missing query parameters: gateway and action are required.',
-      example: '/api/payment?gateway=sslcommerz&action=create-payment',
-    });
-    return;
-  }
-
-  const gatewayActions = ROUTE_MAP[gateway];
-  if (!gatewayActions) {
-    res.status(404).json({
-      error: `Unknown gateway: "${gateway}"`,
-      available: Object.keys(ROUTE_MAP),
-    });
-    return;
-  }
-
-  const loader = gatewayActions[action];
-  if (!loader) {
-    res.status(404).json({
-      error: `Unknown action "${action}" for gateway "${gateway}"`,
-      available: Object.keys(gatewayActions),
-    });
-    return;
-  }
-
-  // ── Delegate to the original handler ───────────────────────────────────────
   try {
-    const module = await loader();
-    await module.default(req, res);
+    // CORS pre-flight
+    if (req.method === 'OPTIONS') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.status(204).end();
+      return;
+    }
+
+    const gateway = normalise(req.query.gateway);
+    const action  = normalise(req.query.action);
+
+    console.log(
+      `[${requestId}] Payment Router: ${req.method} | gateway=${gateway}, action=${action}`,
+    );
+
+    // ─ Validation ─────────────────────────────────────────────────────────
+    if (!gateway || !action) {
+      console.warn(`[${requestId}] Missing gateway or action`);
+      res.status(400).json({
+        error: 'Missing query parameters: gateway and action are required.',
+        received: { gateway, action },
+        example: '/api/payment?gateway=sslcommerz&action=create-payment',
+      });
+      return;
+    }
+
+    const gatewayActions = ROUTE_MAP[gateway];
+    if (!gatewayActions) {
+      console.warn(`[${requestId}] Unknown gateway: ${gateway}`);
+      res.status(404).json({
+        error: `Unknown gateway: "${gateway}"`,
+        available: Object.keys(ROUTE_MAP),
+      });
+      return;
+    }
+
+    const handler = gatewayActions[action];
+    if (!handler) {
+      console.warn(
+        `[${requestId}] Unknown action for gateway ${gateway}: ${action}`,
+      );
+      res.status(404).json({
+        error: `Unknown action "${action}" for gateway "${gateway}"`,
+        available: Object.keys(gatewayActions),
+      });
+      return;
+    }
+
+    // ─ Invoke the handler ──────────────────────────────────────────────────
+    console.log(`[${requestId}] Invoking ${gateway}/${action}...`);
+    const result = await handler(req, res);
+
+    const elapsed = Date.now() - startTime;
+    console.log(
+      `[${requestId}] Success: ${gateway}/${action} completed in ${elapsed}ms`,
+    );
   } catch (err: any) {
-    console.error(`[payment-router] ${gateway}/${action} threw:`, err);
+    const elapsed = Date.now() - startTime;
+    console.error(`[${requestId}] ERROR after ${elapsed}ms:`, {
+      message: err?.message,
+      stack: err?.stack,
+      name: err?.name,
+    });
+
     if (!res.headersSent) {
-      res.status(500).json({ error: err?.message ?? 'Internal server error' });
+      res.status(500).json({
+        error: 'Payment router encountered an error',
+        message: err?.message ?? 'Unknown error',
+        requestId,
+      });
     }
   }
 }
@@ -119,10 +138,10 @@ export default async function handler(
 // ── Helpers ──────────────────────────────────────────────────────────────────
 /**
  * Safely coerce a VercelRequest query value to a plain lowercase string.
- * Handles string | string[] | undefined coming from req.query.
  */
 function normalise(value: string | string[] | undefined): string {
   if (!value) return '';
   const str = Array.isArray(value) ? value[0] : value;
+  if (typeof str !== 'string') return '';
   return str.trim().toLowerCase();
 }
