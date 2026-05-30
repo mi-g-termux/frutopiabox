@@ -89,23 +89,22 @@ async function startServer() {
   });
 
   // ==========================================================================
-  //  DYNAMIC PAYMENT ROUTER FOR ALL GATEWAYS (Render.com Free Plan Support)
+  //  UNIVERSAL PAYMENT ROUTER FOR ALL GATEWAYS (Render.com Live Support)
   // ==========================================================================
-  // এটি bKash, Nagad, SSLCommerz, PayPal, Razorpay, Stripe সবকিছুর জন্য কাজ করবে।
-  // ফ্রন্টএন্ড যখনই /api/sslcommerz/create-payment বা /api/bkash/callback এ হিট করবে, 
-  // এটি সেই রিকোয়েস্টটি ধরে আপনার সেন্ট্রাল payment.ts রাউটারে পাঠিয়ে দেবে।
+  // এটি ফ্রন্টএন্ড থেকে আসা যেকোনো পেমেন্ট গেটওয়ের রিকোয়েস্টকে সরাসরি আপনার 
+  // api/payment.ts ফাইলের সাথে ডাইনামিকালি কানেক্ট করে দেবে।
   
   app.all('/api/:gateway/:action', async (req: express.Request, res: express.Response) => {
     const { gateway, action } = req.params;
     
-    // Vercel এর মত কুয়েরি প্যারামিটার সেট করা হচ্ছে যাতে payment.ts ফাইলটি পড়তে পারে
+    // রিকোয়েস্ট কুয়েরিতে গেটওয়ে ও অ্যাকশন ম্যাপ করা হচ্ছে যেন payment.ts পড়তে পারে
     req.query.gateway = gateway;
     req.query.action = action;
 
-    console.log(`[PAYMENT ROUTER] Routing request for Gateway: ${gateway} | Action: ${action}`);
+    console.log(`[PAYMENT ROUTER] Dynamically routing for Gateway: ${gateway} | Action: ${action}`);
 
     try {
-      // আপনার তৈরি করা নতুন api/payment.ts ফাইলটি রানটাইমে ইম্পোর্ট করা হচ্ছে
+      // আপনার সেন্ট্রাল পেমেন্ট রাউটার ফাইলটি ইম্পোর্ট করা হচ্ছে
       const paymentRouter = await import('./api/payment.js');
       
       if (typeof paymentRouter.default === 'function') {
@@ -119,8 +118,8 @@ async function startServer() {
     }
   });
 
-  // পুরোনো মেথডগুলোও ব্যাকআপ হিসেবে রাখা হলো যেন কোনো ব্যাকওয়ার্ড লিংক ভেঙে না যায়
-  app.post('/api/bkash/create-payment', async (req: express.Request, res: express.Response) => {
+  // আগের মেথডগুলোর জন্য সেফটি ব্যাকআপ রাউট
+  app.post('/api/bkash/create-payment', async (req, res) => {
     try {
       const paymentRouter = await import('./api/payment.js');
       req.query.gateway = 'bkash';
@@ -129,7 +128,7 @@ async function startServer() {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
-  app.get('/api/bkash/callback', async (req: express.Request, res: express.Response) => {
+  app.get('/api/bkash/callback', async (req, res) => {
     try {
       const paymentRouter = await import('./api/payment.js');
       req.query.gateway = 'bkash';
@@ -138,7 +137,7 @@ async function startServer() {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
-  app.post('/api/nagad/create-payment', async (req: express.Request, res: express.Response) => {
+  app.post('/api/nagad/create-payment', async (req, res) => {
     try {
       const paymentRouter = await import('./api/payment.js');
       req.query.gateway = 'nagad';
@@ -147,7 +146,7 @@ async function startServer() {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
-  app.get('/api/nagad/callback', async (req: express.Request, res: express.Response) => {
+  app.get('/api/nagad/callback', async (req, res) => {
     try {
       const paymentRouter = await import('./api/payment.js');
       req.query.gateway = 'nagad';
@@ -157,7 +156,7 @@ async function startServer() {
   });
 
   // ==========================================================================
-  //  VITE / FRONTEND SERVING
+  //  VITE / FRONTEND SERVING CONFIGURATION
   // ==========================================================================
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
@@ -168,7 +167,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    get('*', (req, res) => {
+    app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
