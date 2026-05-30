@@ -9,10 +9,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { amount, orderId, customer = {}, productName = 'Order' } = req.body || {};
+    const body = req.body || {};
+    const { amount, orderId, customer = {}, productName = 'Order' } = body;
     if (!amount || !orderId) return res.status(400).json({ error: 'amount and orderId required' });
 
-    const creds = await getGatewayCreds('sslcommerz');
+    let creds = await getGatewayCreds('sslcommerz');
+    const storeIdFromBody = String(body.storeId || body.store_id || '');
+    const storePassFromBody = String(body.storePass || body.storePassword || body.store_passwd || '');
+    if (storeIdFromBody && storePassFromBody) {
+      creds = {
+        ...creds,
+        storeId: storeIdFromBody,
+        storePass: storePassFromBody,
+        isSandbox: body.sandboxMode ?? body.isSandbox ?? creds.isSandbox,
+      };
+    }
+
     const missing = missingCreds(creds, ['storeId', 'storePass']);
     if (missing.length) {
       return res.status(500).json({ error: `Missing SSLCommerz credentials: ${missing.join(', ')}` });
@@ -56,10 +68,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: form.toString(),
     });
-    const j: any = await r.json();
+
+    const text = await r.text();
+    let j: any;
+    try {
+      j = JSON.parse(text);
+    } catch (parseErr) {
+      console.error('[sslcz/create] invalid JSON response', { status: r.status, text, err: parseErr });
+      return res.status(502).json({
+        error: 'SSLCommerz returned invalid JSON',
+        status: r.status,
+        detail: text,
+      });
+    }
+
     if (j?.status !== 'SUCCESS' || !j?.GatewayPageURL) {
       return res.status(502).json({ error: 'SSLCommerz session failed', detail: j });
     }
+
     return res.status(200).json({ redirectUrl: j.GatewayPageURL, sessionkey: j.sessionkey });
   } catch (e: any) {
     console.error('[sslcz/create]', e);

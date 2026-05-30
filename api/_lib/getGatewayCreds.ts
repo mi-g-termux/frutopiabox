@@ -66,8 +66,8 @@ export async function getGatewayCreds(gateway: string): Promise<Record<string, s
 
     case 'sslcommerz':
       return {
-        storeId:   pick('SSLCZ_STORE_ID',       'sslCommerzStoreId'),
-        storePass: pick('SSLCZ_STORE_PASSWORD',  'sslCommerzStorePassword'),
+        storeId:   pick('SSLCZ_STORE_ID',       'sslCommerzStoreId') || 'quirky_fruity_ssl',
+        storePass: pick('SSLCZ_STORE_PASSWORD',  'sslCommerzStorePassword') || 'ssl_test_password',
         isSandbox: pick('SSLCZ_SANDBOX',         'sslCommerzSandboxMode') || 'true',
       };
 
