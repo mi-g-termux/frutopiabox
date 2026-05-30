@@ -1,0 +1,41 @@
+# Netlify deploy config for Frutopia
+#
+# Netlify Functions live under netlify/functions/. The payment-gateway handlers
+# in /api use @vercel/node signatures, so they run NATIVELY on Vercel only.
+#
+# On Netlify you have two options:
+#  A) Static-only deploy:   set publish="dist", skip /api/*. The InstallWizard
+#     and Firebase work (since all client SDKs talk straight to Firebase), but
+#     server-side endpoints (payments, SMTP email, SMS) won't work.
+#  B) Run the Express server (server.mjs) on a separate service like Render
+#     and point /api/* to that via the redirect below (replace YOUR-RENDER-URL).
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Option B: proxy API calls to an external Node server (Render/Fly/Railway).
+# Uncomment + set NODE_API_URL in Netlify env vars to enable.
+# [[redirects]]
+#   from = "/api/*"
+#   to   = "https://YOUR-RENDER-URL.onrender.com/api/:splat"
+#   status = 200
+#   force = true
+
+# SPA fallback
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
