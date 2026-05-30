@@ -7,19 +7,19 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // ── Static imports (no dynamic import() — more reliable on Vercel) ──────────
-import bkashCreate from './bkash/create-payment';
-import bkashExecute from './bkash/execute-payment';
-import nagadCreate from './nagad/create-payment';
-import nagadVerify from './nagad/verify-payment';
-import sslcommerzCreate from './sslcommerz/create-payment';
-import sslcommerzIpn from './sslcommerz/ipn';
-import razorpayCreate from './razorpay/create-order';
-import razorpayVerify from './razorpay/verify-payment';
-import paypalCreate from './paypal/create-order';
-import paypalCapture from './paypal/capture-order';
-import paypalCallback from './paypal/callback';
-import stripeCreate from './stripe/create-payment-intent';
-import stripeConfirm from './stripe/confirm-payment';
+import bkashCreate from './_bkash/create-payment';
+import bkashExecute from './_bkash/execute-payment';
+import nagadCreate from './_nagad/create-payment';
+import nagadVerify from './_nagad/verify-payment';
+import sslcommerzCreate from './_sslcommerz/create-payment';
+import sslcommerzIpn from './_sslcommerz/ipn';
+import razorpayCreate from './_razorpay/create-order';
+import razorpayVerify from './_razorpay/verify-payment';
+import paypalCreate from './_paypal/create-order';
+import paypalCapture from './_paypal/capture-order';
+import paypalCallback from './_paypal/callback';
+import stripeCreate from './_stripe/create-payment-intent';
+import stripeConfirm from './_stripe/confirm-payment';
 
 // ── Route map: no lazy loading, direct function references ──────────────────
 type Handler = (req: VercelRequest, res: VercelResponse) => unknown;
