@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node server.mjs",
+    "dev": "npx tsx server.ts",
     "build": "vite build",
-    "start": "NODE_ENV=production node server.mjs",
+    "start": "NODE_ENV=production npx tsx server.ts",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
