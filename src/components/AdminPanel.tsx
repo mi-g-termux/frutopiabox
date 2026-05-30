@@ -2038,25 +2038,7 @@ await saveSiteSettings(JSON.parse(JSON.stringify(current)));
  onChange={(e) => setOrderTrackerInNavbar(e.target.checked)}
  className="scale-110 accent-violet-600 rounded cursor-pointer"
  /> <div> <label htmlFor="tracker-navbar" className="text-xs font-bold uppercase cursor-pointer text-slate-700">Show Tracker Link in Navbar</label> <p className="text-[9px] text-slate-400 mt-0.5">Displays a"Track Order" button in the top navigation bar for customers.</p> </div> </div> )}
- </div> {/* SECTION ICONS — Newsletter & Testimonials */}
- <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3"> <h4 className="text-xs font-bold uppercase text-blue-700 tracking-wider flex items-center gap-1.5"> <span>Section Icons</span> <span className="bg-blue-100 text-blue-600 text-[9px] px-2 py-0.5 rounded-full font-bold">STOREFRONT</span> </h4> <p className="text-[10px] text-slate-500 font-medium"> Paste an image URL for the icon shown above the Newsletter Registration and Testimonials sections. Leave blank to use the built-in professional icons.
- </p> <div className="grid grid-cols-1 sm:grid-cols-2 gap-3"> <div> <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Newsletter Section Icon URL</label> <div className="flex items-center gap-2"> <input
- type="text"
- value={newsletterIconUrl}
- onChange={(e) => setNewsletterIconUrl(e.target.value)}
- placeholder="https://... (leave blank for default)"
- className="flex-1 bg-white border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-2.5 py-1.5 text-xs outline-none transition-all"
- /> {newsletterIconUrl && (
- <img src={newsletterIconUrl} alt="preview" className="w-8 h-8 object-contain rounded border border-slate-200 bg-white" onError={(e) => { (e.target as HTMLImageElement).style.display ='none'; }} /> )}
- </div> <button onClick={() => setNewsletterIconUrl('')} className="mt-1 text-[10px] text-slate-400 hover:text-rose-500 cursor-pointer">Reset to default</button> </div> <div> <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Testimonials Section Icon URL</label> <div className="flex items-center gap-2"> <input
- type="text"
- value={testimonialIconUrl}
- onChange={(e) => setTestimonialIconUrl(e.target.value)}
- placeholder="https://... (leave blank for default)"
- className="flex-1 bg-white border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-2.5 py-1.5 text-xs outline-none transition-all"
- /> {testimonialIconUrl && (
- <img src={testimonialIconUrl} alt="preview" className="w-8 h-8 object-contain rounded border border-slate-200 bg-white" onError={(e) => { (e.target as HTMLImageElement).style.display ='none'; }} /> )}
- </div> <button onClick={() => setTestimonialIconUrl('')} className="mt-1 text-[10px] text-slate-400 hover:text-rose-500 cursor-pointer">Reset to default</button> </div> </div> </div> {/* Favicon URL */}
+  </div>
  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2"> <div> <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider mb-0.5"> Browser Tab Favicon</label> <p className="text-[9px] text-slate-400 font-medium">Shown as the tiny icon in the browser tab. Paste a URL or base64 image.</p> <p className="text-[9px] text-violet-600 font-semibold mt-0.5"> Recommended size: <strong>32×32px</strong> (also works at 16×16px & 64×64px) — ICO, PNG, or SVG, transparent background.</p> </div> <div className="flex items-center gap-2"> <input
  type="text"
  value={faviconUrl}
